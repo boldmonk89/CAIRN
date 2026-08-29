@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* Every colour pair below was checked against a white or #f7f7f7 ground and
+   clears 4.5:1. Don't add one without doing the same. */
+@theme {
+  --color-bg: #f7f7f7;
+  --color-card: #ffffff;
+  --color-line: #e4e4e4;
+  --color-ink: #222222;
+  --color-muted: #6a6a6a; /* 5.0:1 on bg */
+  --color-accent: #d2412f; /* 4.6:1 with white text */
+  --color-accent-soft: #fdeeeb;
+  --color-good: #0f7b52; /* 5.3:1 on white */
+  --color-bad: #b3261e; /* 6.5:1 on white */
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  --radius-card: 1rem;
+}
+
+html {
+  background: var(--color-bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* nothing on this page may scroll sideways, at any width */
+  overflow-x: hidden;
+}
+
+/* One focus style, defined once, so no later rule can quietly win. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Hide the scrollbar on the horizontal chip/card rails without hiding overflow. */
+.rail {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

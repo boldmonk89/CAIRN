@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { expenseDebts, ledger, splitProportional, type Expense, type Ledger } from "./money.js";
+import {
+  expenseDebts, formatMoney, ledger, parseMoney, splitProportional,
+  type Expense, type Ledger,
+} from "./money.js";
 
 const sum = (xs: bigint[]) => xs.reduce((a, b) => a + b, 0n);
 const abs = (x: bigint) => (x < 0n ? -x : x);
@@ -198,5 +201,30 @@ describe("expenseDebts guards", () => {
   it("refuses a bill nobody paid", () => {
     expect(() => expenseDebts({ currency: "INR", amount: 1n, paidBy: {}, shares: { A: 1n } }))
       .toThrow(/at least one payer/);
+  });
+});
+
+describe("display and input", () => {
+  it("formats minor units without ever touching a float", () => {
+    expect(formatMoney(123456n, "INR")).toBe("₹1,234.56");
+    expect(formatMoney(-50n, "INR")).toBe("-₹0.50");
+    expect(formatMoney(1500n, "JPY")).toBe("JP¥1,500");   // no minor unit; en-IN disambiguates the yen
+    // Intl separates the code with a non-breaking space; normalise it away
+    expect(formatMoney(1234567n, "KWD").replace(/ /g, " ")).toBe("KWD 1,234.567");
+  });
+
+  it("round-trips typed input back to the same minor units", () => {
+    for (const [text, ccy, want] of [
+      ["1,234.50", "INR", 123450n], ["0.05", "INR", 5n], ["7", "INR", 700n],
+      ["1500", "JPY", 1500n], ["1.005", "KWD", 1005n],
+    ] as const) {
+      expect(parseMoney(text, ccy)).toBe(want);
+    }
+  });
+
+  it("rejects input that is not money", () => {
+    for (const bad of ["", ".", "abc", "1.2.3", "-5", "1.999"]) {
+      expect(parseMoney(bad, "INR")).toBeNull();
+    }
   });
 });

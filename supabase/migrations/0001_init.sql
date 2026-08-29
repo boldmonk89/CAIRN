@@ -2,9 +2,6 @@
 -- Money is integer minor units (bigint). No numeric, no float, anywhere.
 -- Currency is per-expense; balances net per currency.
 
-create extension if not exists pgcrypto;
-create extension if not exists citext;
-
 -- ---------------------------------------------------------------- profiles
 -- Deliberately holds NO contact details. Email lives only in auth.users,
 -- which is not readable by other users.
@@ -35,8 +32,10 @@ create index on trip_members (user_id);
 create table trip_invites (
   id          uuid primary key default gen_random_uuid(),
   trip_id     uuid not null references trips(id) on delete cascade,
-  token       text not null unique default encode(gen_random_bytes(24),'hex'),
-  email       citext,                        -- optional: null = open link
+  token       text not null unique
+                default replace(gen_random_uuid()::text,'-','')
+                      || replace(gen_random_uuid()::text,'-',''),
+  email       text,                          -- optional: null = open link
   created_by  uuid not null references profiles(id),
   created_at  timestamptz not null default now(),
   expires_at  timestamptz not null default now() + interval '14 days',
@@ -265,7 +264,7 @@ begin
     raise exception 'invite is not valid';
   end if;
   if inv.email is not null
-     and inv.email <> (select email from auth.users where id = auth.uid()) then
+     and lower(inv.email) <> (select lower(email) from auth.users where id = auth.uid()) then
     raise exception 'invite is not valid';   -- same message: do not leak who it was for
   end if;
   insert into trip_members (trip_id, user_id) values (inv.trip_id, auth.uid())
