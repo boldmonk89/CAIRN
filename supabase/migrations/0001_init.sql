@@ -186,6 +186,12 @@ language sql security definer stable set search_path = public as $$
                  where trip_id = t and user_id = auth.uid() and role = 'owner');
 $$;
 
+create function can_edit_expense(eid uuid) returns boolean
+language sql security definer stable set search_path = public as $$
+  select exists (select 1 from expenses e where e.id = eid
+                 and (e.created_by = auth.uid() or is_trip_owner(e.trip_id)));
+$$;
+
 alter table profiles       enable row level security;
 alter table trips          enable row level security;
 alter table trip_members   enable row level security;
@@ -222,14 +228,22 @@ create policy ti_del on trip_invites for delete using (is_trip_member(trip_id));
 create policy e_sel on expenses for select using (is_trip_member(trip_id));
 create policy e_ins on expenses for insert
   with check (is_trip_member(trip_id) and created_by = auth.uid());
-create policy e_upd on expenses for update using (is_trip_member(trip_id))
+-- editing someone else's entry is a quiet way to change what you owe, so it is
+-- the person who logged it, or the trip owner. Widen this if you'd rather.
+create policy e_upd on expenses for update
+  using (created_by = auth.uid() or is_trip_owner(trip_id))
   with check (is_trip_member(trip_id) and created_by = auth.uid());
-create policy e_del on expenses for delete using (is_trip_member(trip_id));
+create policy e_del on expenses for delete
+  using (created_by = auth.uid() or is_trip_owner(trip_id));
 
-create policy ep_all on expense_payers for all
-  using (is_trip_member(trip_id)) with check (is_trip_member(trip_id));
-create policy es_all on expense_shares for all
-  using (is_trip_member(trip_id)) with check (is_trip_member(trip_id));
+-- lines follow the header: anyone in the trip can read them, only the person
+-- who logged the expense (or the owner) can change who paid and who owes.
+create policy ep_sel on expense_payers for select using (is_trip_member(trip_id));
+create policy ep_wri on expense_payers for all
+  using (can_edit_expense(expense_id)) with check (can_edit_expense(expense_id));
+create policy es_sel on expense_shares for select using (is_trip_member(trip_id));
+create policy es_wri on expense_shares for all
+  using (can_edit_expense(expense_id)) with check (can_edit_expense(expense_id));
 
 -- settlements: either party may record one; the trigger decides confirmation.
 create policy s_sel on settlements for select using (is_trip_member(trip_id));
