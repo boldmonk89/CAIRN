@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   webDir: "out",
   android: {
     // the WebView must not fall back to a light system background mid-navigation
-    backgroundColor: "#0c0a09",
+    backgroundColor: "#141412",
   },
   plugins: {
     // Android needs the app to ask; the WebView's own prompt is not enough

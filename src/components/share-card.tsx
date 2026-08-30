@@ -16,9 +16,9 @@ const SHAPES: Record<Shape, { w: number; h: number; label: string }> = {
   wide: { w: 1920, h: 1080, label: "Wide 16:9" },
 };
 
-const INK = { transparent: "#ffffff", dark: "#fafaf9", orange: "#0c0a09" };
+const INK = { transparent: "#ffffff", dark: "#fafaf9", orange: "#141412" };
 const DIM = { transparent: "#d6d3d1", dark: "#a8a29e", orange: "#3f1d0c" };
-const LINE_COLOUR = { transparent: "#ff5a1f", dark: "#ff5a1f", orange: "#0c0a09" };
+const LINE_COLOUR = { transparent: "#ef3d05", dark: "#ef3d05", orange: "#141412" };
 
 /** family stacks as the browser resolved them, so canvas gets the real fonts */
 function fontStacks() {
@@ -60,7 +60,7 @@ function drawCard(
 
   ctx.clearRect(0, 0, w, h); // transparent unless we paint over it
   if (ground === "dark") {
-    ctx.fillStyle = "#0c0a09";
+    ctx.fillStyle = "#141412";
     ctx.fillRect(0, 0, w, h);
   } else if (ground === "orange") {
     const g = ctx.createLinearGradient(0, 0, w, h);
@@ -89,7 +89,7 @@ function drawCard(
   let y = pad + 60 * unit;
 
   if (achievement) {
-    ctx.fillStyle = ground === "orange" ? "#0c0a09" : "#fbbf24";
+    ctx.fillStyle = ground === "orange" ? "#141412" : "#fbbf24";
     ctx.font = `700 ${Math.round(30 * unit)}px ${f.mono}`;
     ctx.fillText(achievement.title.toUpperCase(), pad, y);
     y += 46 * unit;
@@ -107,7 +107,7 @@ function drawCard(
 
   // the number people actually want to show off
   ctx.font = `900 ${Math.round(210 * unit)}px ${f.display}`;
-  ctx.fillStyle = ground === "orange" ? "#0c0a09" : "#ff5a1f";
+  ctx.fillStyle = ground === "orange" ? "#141412" : "#ef3d05";
   const distance = km(run.distance);
   ctx.fillText(distance, pad, y);
   const distWidth = ctx.measureText(distance).width;
@@ -246,7 +246,7 @@ export function ShareCard({
           <input
             type="checkbox" checked={showRoute}
             onChange={(e) => setShowRoute(e.target.checked)}
-            className="h-5 w-5 accent-[#ff5a1f]"
+            className="h-5 w-5 accent-[#ef3d05]"
           />
           <span className="text-sm font-medium">Include the route line</span>
         </label>

@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
-    "sync": "next build && cap sync android",
-    "apk": "npm run sync && cd android && gradlew.bat assembleDebug"
+    "sync": "next build && node scripts/flatten-rsc.mjs out && cap sync android",
+    "apk": "npm run sync && cd android && gradlew.bat assembleDebug",
+    "a11y": "node scripts/a11y.mjs"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",

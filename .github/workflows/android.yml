@@ -35,7 +35,17 @@ jobs:
       - name: Build the web app and copy it into the Android project
         run: |
           npx next build
+          node scripts/flatten-rsc.mjs out
           npx cap sync android
+
+      # `next start` refuses to run against output:"export", so serve the
+      # exported folder the way a static host does (/record -> record.html).
+      - name: Measure the accessibility bar on rendered pixels
+        run: |
+          npx playwright install --with-deps chromium
+          node scripts/serve.mjs out 3000 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000/ && break; sleep 1; done
+          node scripts/a11y.mjs http://localhost:3000
 
       - name: Assemble the debug APK
         working-directory: android

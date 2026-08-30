@@ -4,17 +4,22 @@
    surface it actually sits on; the ratio is in the comment. Don't add a
    colour here without doing the same. */
 @theme {
-  --color-ground: #0c0a09;
-  --color-card: #1c1917;
-  --color-raised: #292524;
-  --color-line: #37312e;
-  --color-ink: #fafaf9; /* 18.9:1 on ground */
-  --color-muted: #a8a29e; /* 7.8:1 on ground, 7.0:1 on card */
-  --color-accent: #ff5a1f; /* 6.3:1 on ground; black on it is 6.7:1 */
-  --color-accent-ink: #0c0a09;
-  --color-good: #4ade80; /* 11.3:1 on ground */
-  --color-bad: #f87171; /* 7.1:1 on ground */
-  --color-gold: #fbbf24; /* 11.8:1 on ground */
+  /* Sampled from the reference screenshots' header and nav-bar strips, where
+     the chrome lives: #141412 is 84-94% of both. The slate blues in those
+     images are map and photo content, not surfaces. The accent is measured at
+     hue 14, saturation ~0.97 across three of the references.
+     Every ratio below is against the surface the colour actually sits on. */
+  --color-ground: #141412;
+  --color-card: #1c1b18;
+  --color-raised: #26241f;
+  --color-line: #33302b;
+  --color-ink: #fafaf9; /* 18.0:1 on ground */
+  --color-muted: #a8a29e; /* 7.3:1 on ground, 6.8:1 on card */
+  --color-accent: #ef3d05; /* 4.7:1 on ground; black on it is 4.7:1 */
+  --color-accent-ink: #141412;
+  --color-good: #4ade80; /* 10.7:1 on ground */
+  --color-bad: #f87171; /* 6.7:1 on ground */
+  --color-gold: #fbbf24; /* 11.2:1 on ground */
 
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;

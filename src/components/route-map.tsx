@@ -57,9 +57,9 @@ export function RouteMap({
       });
       tiles.on("tileload", () => setDead(false));
       tiles.addTo(m);
-      line.current = L.polyline([], { color: "#ff5a1f", weight: 4, lineJoin: "round" }).addTo(m);
+      line.current = L.polyline([], { color: "#ef3d05", weight: 4, lineJoin: "round" }).addTo(m);
       head.current = L.circleMarker([0, 0], {
-        radius: 6, color: "#0c0a09", weight: 2, fillColor: "#ff5a1f", fillOpacity: 1,
+        radius: 6, color: "#141412", weight: 2, fillColor: "#ef3d05", fillOpacity: 1,
       });
       map.current = m;
 
