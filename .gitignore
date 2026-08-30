@@ -1,3 +1,12 @@
 node_modules
 .env*
 .next
+
+# capacitor
+/android/app/src/main/assets/public
+/android/app/build
+/android/build
+/android/.gradle
+/android/local.properties
+/out
+/scripts/*.png

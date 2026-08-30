@@ -75,6 +75,12 @@ body {
   background: var(--color-card);
   font-family: var(--font-sans);
 }
+
+/* OpenStreetMap only publishes a light raster, so invert it into a dark one.
+   The route polyline is drawn in a separate pane and is NOT filtered. */
+.leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.6);
+}
 .leaflet-control-attribution {
   background: rgba(12, 10, 9, 0.8) !important;
   color: #a8a29e !important;

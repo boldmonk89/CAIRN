@@ -38,7 +38,7 @@ export function RouteGlyph({ run, className = "" }: { run: Run; className?: stri
 export function RunCard({ run }: { run: Run }) {
   return (
     <Card as="li" className="overflow-hidden">
-      <Link href={`/runs/${run.id}`} className="block cursor-pointer p-4 transition-colors duration-200 hover:bg-raised">
+      <Link href={{ pathname: "/run", query: { id: run.id } }} className="block cursor-pointer p-4 transition-colors duration-200 hover:bg-raised">
         <div className="flex items-start gap-4">
           <div className="min-w-0 flex-1">
             <p className="label text-muted">

@@ -183,7 +183,7 @@ export default function RecordPage() {
       const earned = achievementsFor(run, previous);
       await putRun(run);
       sessionStorage.setItem(`cairn.earned.${id}`, JSON.stringify(earned));
-      router.replace(`/runs/${id}`);
+      router.replace(`/run?id=${id}`);
     } catch (e) {
       setError(`Couldn't save the run: ${(e as Error).message}. Don't leave this screen yet.`);
       setPhase("paused");

@@ -56,7 +56,7 @@ export default function HomePage() {
           <ul className="rail flex gap-3">
             {pbs.map((pb) => (
               <li key={pb.label}>
-                <Link href={`/runs/${pb.runId}`}>
+                <Link href={{ pathname: "/run", query: { id: pb.runId } }}>
                   <Card className="min-w-28 cursor-pointer p-4 transition-colors duration-200 hover:border-gold">
                     <p className="label text-gold">{pb.label}</p>
                     <p className="stat mt-1 text-2xl">{duration(pb.seconds * 1000)}</p>

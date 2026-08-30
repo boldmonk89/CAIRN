@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useRef, useState } from "react";
 import type { Map as LeafletMap, Polyline, CircleMarker } from "leaflet";
 import type { Fix } from "@/lib/geo";
 
-// ponytail: OpenStreetMap raster tiles through CARTO's free dark style. No key,
-// no account, no bill. Swap the tile URL for Mapbox if we ever want vector
-// tiles or traffic — that needs a paid token, so it's a decision to make, not a
-// default to drift into.
-const TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+// OpenStreetMap's own tiles: no key, no account, no bill. CARTO's dark style
+// used to be usable unkeyed and now serves "API KEY REQUIRED" watermarks, so
+// don't go back to it without a paid token.
+//
+// ponytail: OSM is a light basemap darkened by a CSS filter on .leaflet-tile,
+// which costs nothing and matches the UI. Their tile policy is fine for one
+// person's app but not for a widely distributed one — move to a keyed provider
+// (Mapbox, Stadia, MapTiler) before this ships to strangers.
+const TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export function RouteMap({
   track, live = false, className = "", interactive = true,
@@ -23,6 +26,7 @@ export function RouteMap({
   interactive?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const [dead, setDead] = useState(false);
   const map = useRef<LeafletMap | null>(null);
   const line = useRef<Polyline | null>(null);
   const head = useRef<CircleMarker | null>(null);
@@ -46,7 +50,13 @@ export function RouteMap({
         keyboard: interactive,
       }).setView([20.5937, 78.9629], 4);
 
-      L.tileLayer(TILES, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(m);
+      const tiles = L.tileLayer(TILES, { attribution: ATTRIBUTION, maxZoom: 19 });
+      let reported = false;
+      tiles.on("tileerror", () => {
+        if (!reported) { reported = true; setDead(true); }
+      });
+      tiles.on("tileload", () => setDead(false));
+      tiles.addTo(m);
       line.current = L.polyline([], { color: "#ff5a1f", weight: 4, lineJoin: "round" }).addTo(m);
       head.current = L.circleMarker([0, 0], {
         radius: 6, color: "#0c0a09", weight: 2, fillColor: "#ff5a1f", fillOpacity: 1,
@@ -90,15 +100,24 @@ export function RouteMap({
   useEffect(draw);
 
   return (
-    <div
-      ref={host}
-      className={className}
-      role="img"
-      aria-label={
-        track.length
-          ? `Map of the route, ${track.length} recorded points`
-          : "Map, waiting for a GPS signal"
-      }
-    />
+    // `className` must position this box (the callers pass `absolute inset-0`):
+    // the host below fills it, and percentage heights need a definite parent.
+    <div className={className}>
+      {dead && (
+        <p className="pointer-events-none absolute inset-x-0 bottom-8 z-[500] mx-auto w-fit rounded-lg border border-line bg-ground/90 px-3 py-1.5 text-xs text-muted">
+          Map tiles unavailable — your route is still being recorded.
+        </p>
+      )}
+      <div
+        ref={host}
+        className="absolute inset-0"
+        role="img"
+        aria-label={
+          track.length
+            ? `Map of the route, ${track.length} recorded points`
+            : "Map, waiting for a GPS signal"
+        }
+      />
+    </div>
   );
 }

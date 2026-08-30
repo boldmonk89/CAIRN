@@ -137,8 +137,10 @@ export function splits(pts: Point[], every = 1000): Split[] {
     }
   }
 
+  // Below 5% of a split, the remainder is GPS dust — showing it as a "0.0 km"
+  // row with a wild pace tells the runner nothing. It stays in the total.
   const tailD = totalDistance(pts) - markD;
-  if (tailD > 1) {
+  if (tailD >= every * 0.05) {
     const ms = pts.at(-1)!.t - markT;
     out.push({
       index: out.length + 1, distance: tailD,

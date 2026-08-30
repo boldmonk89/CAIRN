@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { RouteMap } from "@/components/route-map";
 import { ShareCard } from "@/components/share-card";
 import { Button, Card, Empty, Sheet, Stat, inputClass } from "@/components/ui";
@@ -12,8 +12,8 @@ import { bestsFor, PB_DISTANCES, type Achievement, type Run } from "@/lib/runs";
 import { pace, splits, withDistance } from "@/lib/geo";
 import { dateLabel, duration, km, paceLabel, timeLabel } from "@/lib/format";
 
-export default function RunPage() {
-  const { id } = useParams<{ id: string }>();
+function RunDetail() {
+  const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const [run, setRun] = useState<Run | null | undefined>(undefined);
   const [earned, setEarned] = useState<Achievement[]>([]);
@@ -22,6 +22,7 @@ export default function RunPage() {
   const [title, setTitle] = useState("");
 
   useEffect(() => {
+    if (!id) { setRun(null); return; }
     getRun(id).then((r) => {
       setRun(r ?? null);
       if (r) setTitle(r.title);
@@ -149,7 +150,7 @@ export default function RunPage() {
                 return (
                   <div key={s.index} className="flex items-center gap-3 p-3">
                     <span className="stat w-8 shrink-0 text-sm text-muted">
-                      {s.distance === 1000 ? s.index : km(s.distance, 1)}
+                      {s.distance === 1000 ? s.index : km(s.distance, 2)}
                     </span>
                     <div className="h-7 flex-1 overflow-hidden rounded-md bg-raised">
                       <div
@@ -217,5 +218,13 @@ export default function RunPage() {
         </div>
       </Sheet>
     </div>
+  );
+}
+
+export default function RunPage() {
+  return (
+    <Suspense fallback={<div className="p-5 label text-muted">Loading…</div>}>
+      <RunDetail />
+    </Suspense>
   );
 }

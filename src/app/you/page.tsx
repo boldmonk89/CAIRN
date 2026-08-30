@@ -55,7 +55,7 @@ export default function YouPage() {
             {pbs.map((pb) => (
               <Link
                 key={pb.label}
-                href={`/runs/${pb.runId}`}
+                href={{ pathname: "/run", query: { id: pb.runId } }}
                 className="flex cursor-pointer items-center gap-3 p-4 transition-colors duration-200 hover:bg-raised"
               >
                 <span className="label w-20 shrink-0 text-gold">{pb.label}</span>

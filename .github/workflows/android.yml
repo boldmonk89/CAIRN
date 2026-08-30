@@ -1,0 +1,48 @@
+name: Build Android APK
+
+# Runs on demand, and on every push to main so there is always a fresh APK to
+# grab. The finished file lands under the run's "Artifacts" section.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # AGP 8.x wants a JDK it recognises. The runner's default is newer than
+      # the toolchain supports, so pin 21.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - run: npm ci
+
+      - name: Prove the maths before shipping it
+        run: npx vitest run
+
+      - name: Build the web app and copy it into the Android project
+        run: |
+          npx next build
+          npx cap sync android
+
+      - name: Assemble the debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cairn-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

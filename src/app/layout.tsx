@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import { TabBar } from "@/components/ui";
+// leaflet first: globals.css overrides some of its chrome, and the last
+// matching rule wins. Importing it inside the map component put it last.
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
 // Self-hosted at build time by next/font: no runtime request to Google, and no
