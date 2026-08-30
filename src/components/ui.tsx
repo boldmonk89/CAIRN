@@ -3,94 +3,56 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
-import { formatMoney, type Minor } from "@/lib/money";
-import type { Member } from "@/lib/store";
+import { Activity, Home, Play, User } from "./icons";
 
-export const initials = (name: string) =>
-  name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-
-export function Avatar({ member, size = 32 }: { member: Member; size?: number }) {
+export function Stat({
+  label, value, unit, size = "md",
+}: { label: string; value: ReactNode; unit?: string; size?: "sm" | "md" | "lg" | "hero" }) {
+  const scale = {
+    sm: "text-lg", md: "text-2xl", lg: "text-4xl",
+    hero: "text-[clamp(3rem,18vw,5.5rem)]",
+  }[size];
   return (
-    <span
-      aria-hidden
-      className="inline-grid place-items-center rounded-full font-semibold text-white shrink-0"
-      style={{
-        width: size, height: size, fontSize: size * 0.38,
-        // 42% lightness keeps white text above 4.5:1 at every hue we seed
-        background: `hsl(${member.hue} 55% 42%)`,
-      }}
-    >
-      {initials(member.name)}
-    </span>
-  );
-}
-
-export function AvatarStack({ members, max = 4 }: { members: Member[]; max?: number }) {
-  const shown = members.slice(0, max);
-  const rest = members.length - shown.length;
-  return (
-    <div className="flex items-center">
-      <span className="sr-only">{members.map((m) => m.name).join(", ")}</span>
-      {shown.map((m, i) => (
-        <span key={m.id} className="rounded-full ring-2 ring-card" style={{ marginLeft: i ? -8 : 0 }}>
-          <Avatar member={m} size={26} />
-        </span>
-      ))}
-      {rest > 0 && (
-        <span
-          aria-hidden
-          className="grid h-[26px] w-[26px] place-items-center rounded-full bg-line text-[10px] font-semibold text-muted ring-2 ring-card"
-          style={{ marginLeft: -8 }}
-        >
-          +{rest}
-        </span>
-      )}
+    <div className="min-w-0">
+      <p className="label text-muted">{label}</p>
+      <p className={`stat ${scale} font-medium leading-none mt-1 truncate`}>
+        {value}
+        {unit && <span className="ml-1 text-[0.5em] text-muted">{unit}</span>}
+      </p>
     </div>
   );
 }
 
-/** Money with a sign-aware colour. `neutral` when the sign carries no meaning. */
-export function Amount({
-  minor, currency, tone = "signed", className = "",
-}: { minor: Minor; currency: string; tone?: "signed" | "neutral"; className?: string }) {
-  const colour =
-    tone === "neutral" ? "" : minor > 0n ? "text-good" : minor < 0n ? "text-bad" : "text-muted";
-  return (
-    <span className={`tabular-nums ${colour} ${className}`}>
-      {formatMoney(minor < 0n && tone === "signed" ? -minor : minor, currency)}
-    </span>
-  );
+export function Card({
+  children, className = "", as: As = "div",
+}: { children: ReactNode; className?: string; as?: "div" | "li" | "section" }) {
+  return <As className={`rounded-2xl border border-line bg-card ${className}`}>{children}</As>;
 }
 
-export function Chip({
-  children, active, ...props
-}: { children: ReactNode; active?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+export function Button({
+  children, variant = "primary", className = "", ...props
+}: {
+  children: ReactNode;
+  variant?: "primary" | "ghost" | "danger";
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  const styles = {
+    primary: "bg-accent text-accent-ink hover:brightness-110",
+    ghost: "border border-line bg-raised text-ink hover:border-muted",
+    danger: "border border-line bg-raised text-bad hover:border-bad",
+  }[variant];
   return (
     <button
       type="button"
-      aria-pressed={active}
       {...props}
-      className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition-colors ${
-        active
-          ? "border-ink bg-ink text-white"
-          : "border-line bg-card text-ink hover:border-muted"
-      } ${props.className ?? ""}`}
+      className={`min-h-12 cursor-pointer rounded-xl px-5 font-semibold transition-[filter,border-color] duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${styles} ${className}`}
     >
       {children}
     </button>
   );
 }
 
-export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-card border border-line bg-card ${className}`}>{children}</div>
-  );
-}
-
-/**
- * Bottom sheet on a native <dialog>: Escape, focus trapping and an inert
- * background all come from the platform. Nothing to reimplement.
- */
+/** Bottom sheet on a native <dialog>: Escape, focus trap and inert background
+ *  come from the platform, so there's nothing here to get wrong. */
 export function Sheet({
   open, onClose, title, children,
 }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
@@ -109,92 +71,100 @@ export function Sheet({
       onClose={onClose}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}
       aria-label={title}
-      className="m-0 mt-auto max-h-[88dvh] w-full max-w-[520px] rounded-t-3xl bg-card p-0 text-ink backdrop:bg-black/40 sm:mx-auto sm:mb-0"
+      className="m-0 mt-auto max-h-[90dvh] w-full max-w-[560px] rounded-t-3xl border border-line bg-card p-0 text-ink backdrop:bg-black/70 sm:mx-auto"
     >
-      <div className="flex max-h-[88dvh] flex-col">
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-line bg-card px-4 py-3 rounded-t-3xl">
-          <h2 className="flex-1 text-base font-semibold">{title}</h2>
+      <div className="flex max-h-[90dvh] flex-col">
+        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+          <h2 className="display flex-1 text-xl">{title}</h2>
           <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="grid h-11 w-11 place-items-center rounded-full hover:bg-bg"
+            type="button" onClick={onClose} aria-label="Close"
+            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full text-muted hover:bg-raised hover:text-ink"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
         </div>
-        <div className="overflow-y-auto overscroll-contain px-4 pb-6 pt-4">{children}</div>
+        <div className="overflow-y-auto overscroll-contain p-4">{children}</div>
       </div>
     </dialog>
   );
 }
 
-export function Field({
-  label, hint, children,
-}: { label: string; hint?: string; children: ReactNode }) {
+export function Empty({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
+  return (
+    <div className="px-6 py-16 text-center">
+      <p className="display text-2xl">{title}</p>
+      <p className="mx-auto mt-2 max-w-[38ch] text-sm text-muted">{body}</p>
+      {action && <div className="mt-5 flex justify-center">{action}</div>}
+    </div>
+  );
+}
+
+export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-ink">{label}</span>
+      <span className="label mb-2 block text-muted">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-xs text-muted">{hint}</span>}
     </label>
   );
 }
 
 export const inputClass =
-  "w-full min-h-11 rounded-xl border border-line bg-card px-3 text-base text-ink " +
-  "placeholder:text-muted focus:border-ink";
+  "w-full min-h-12 rounded-xl border border-line bg-raised px-3 text-base text-ink placeholder:text-muted focus:border-accent";
 
 const TABS = [
-  { href: "/", label: "Trips", d: "M3 7h18M3 12h18M3 17h18" },
-  { href: "/soon?tab=Map", label: "Map", d: "M9 4L3 7v13l6-3 6 3 6-3V4l-6 3-6-3z" },
-  { href: "/soon?tab=Plan", label: "Plan", d: "M12 3v18M3 12h18" },
-  { href: "/soon?tab=Stays", label: "Stays", d: "M4 21V10l8-6 8 6v11H4z" },
-  { href: "/soon?tab=Profile", label: "Profile", d: "M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0" },
+  { href: "/", label: "Home", Icon: Home },
+  { href: "/activities", label: "Activities", Icon: Activity },
+  { href: "/record", label: "Record", Icon: Play, center: true },
+  { href: "/you", label: "You", Icon: User },
 ] as const;
 
 export function TabBar() {
   const path = usePathname();
+  // The recorder owns the whole screen — a nav bar there is one mis-tap away
+  // from ending someone's run.
+  if (path === "/record") return null;
+
   return (
-    // fixed height, and nothing here listens to scroll: the bar can never
-    // resize and shove the content it sits over
     <nav
       aria-label="Sections"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-card pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ground/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
-      <ul className="mx-auto flex max-w-[520px]">
-        {TABS.map((t) => {
-          const active = t.href === "/" ? path === "/" : path.startsWith(t.href.split("?")[0]);
+      <ul className="mx-auto flex max-w-[560px] items-center">
+        {TABS.map(({ href, label, Icon, ...rest }) => {
+          const center = "center" in rest && rest.center;
+          const active = href === "/" ? path === "/" : path.startsWith(href);
+          if (center) {
+            return (
+              <li key={label} className="flex-1">
+                <Link
+                  href={href}
+                  className="mx-auto my-2 flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-accent text-accent-ink transition-[filter] duration-200 hover:brightness-110"
+                >
+                  <Icon size={24} />
+                  <span className="sr-only">{label}</span>
+                </Link>
+              </li>
+            );
+          }
           return (
-            <li key={t.label} className="flex-1">
+            <li key={label} className="flex-1">
               <Link
-                href={t.href as never}
+                href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-[56px] flex-col items-center justify-center gap-1 text-[11px] font-medium ${
-                  active ? "text-accent" : "text-muted"
+                className={`flex min-h-[60px] cursor-pointer flex-col items-center justify-center gap-1 transition-colors duration-200 ${
+                  active ? "text-accent" : "text-muted hover:text-ink"
                 }`}
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d={t.d} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {t.label}
+                <Icon size={21} />
+                <span className="label text-[10px]">{label}</span>
               </Link>
             </li>
           );
         })}
       </ul>
     </nav>
-  );
-}
-
-export function Empty({ icon, title, body }: { icon: string; title: string; body: string }) {
-  return (
-    <div className="px-6 py-14 text-center">
-      <div aria-hidden className="mb-3 text-4xl">{icon}</div>
-      <p className="font-semibold">{title}</p>
-      <p className="mx-auto mt-1 max-w-[36ch] text-sm text-muted">{body}</p>
-    </div>
   );
 }
