@@ -14,6 +14,14 @@ await p.getByRole("link", { name: /Demo run/i }).first().click();
 await p.waitForTimeout(2500);
 console.log("--- after navigating to a run ---"); console.log(bad.join("\n") || "none");
 console.log("landed on:", p.url());
+const nav = await p.evaluate(() => {
+  const links = [...document.querySelectorAll("nav[aria-label='Sections'] a")];
+  const w = window.innerWidth;
+  return { items: links.length,
+    centres: links.map(a => Math.round(100 * (a.getBoundingClientRect().left + a.getBoundingClientRect().width/2) / w)),
+    active: links.filter(a => a.getAttribute("aria-current") === "page").map(a => a.textContent.trim()) };
+});
+console.log("bottom bar:", JSON.stringify(nav));
 console.log("title shown:", await p.locator("h1, input").first().inputValue().catch(() => p.locator("h1").first().textContent()));
 await p.screenshot({ path: "scripts/run-new.png" });
 await b.close();

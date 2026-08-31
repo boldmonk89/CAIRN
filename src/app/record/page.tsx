@@ -217,7 +217,7 @@ export default function RecordPage() {
         </p>
       </header>
 
-      <div className="px-5 pt-4">
+      <div className="px-4 pt-4">
         <Stat
           label="Distance"
           value={<span className="text-accent">{km(distance)}</span>}
@@ -253,7 +253,7 @@ export default function RecordPage() {
         </p>
       )}
 
-      <div className="sticky bottom-0 flex items-center justify-center gap-4 bg-ground/95 px-5 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] backdrop-blur">
+      <div className="sticky bottom-0 flex items-center justify-center gap-4 bg-ground/95 px-4 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] backdrop-blur">
         {phase === "idle" || phase === "locating" ? (
           <Button onClick={start} disabled={phase === "locating"} className="flex h-16 w-full items-center justify-center gap-2 text-lg">
             <Play size={22} />

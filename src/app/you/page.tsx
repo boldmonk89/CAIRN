@@ -24,7 +24,7 @@ export default function YouPage() {
   const weightValid = Number.isFinite(weight) && weight >= 25 && weight <= 250;
 
   return (
-    <div className="px-5 pb-32 pt-8">
+    <div className="px-4 pb-32 pt-8">
       <p className="label text-muted">Profile</p>
       <h1 className="display mt-2 text-[clamp(2.5rem,12vw,3.5rem)]">{profile.name}</h1>
 

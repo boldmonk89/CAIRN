@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
-import { Activity, Home, Play, User } from "./icons";
+import { Activity, Home, Medal, Play, User } from "./icons";
 
 export function Stat({
   label, value, unit, size = "md",
@@ -26,7 +26,7 @@ export function Stat({
 export function Card({
   children, className = "", as: As = "div",
 }: { children: ReactNode; className?: string; as?: "div" | "li" | "section" }) {
-  return <As className={`rounded-2xl border border-line bg-card ${className}`}>{children}</As>;
+  return <As className={`rounded-xl border border-line bg-card ${className}`}>{children}</As>;
 }
 
 export function Button({
@@ -114,10 +114,14 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 export const inputClass =
   "w-full min-h-12 rounded-xl border border-line bg-raised px-3 text-base text-ink placeholder:text-muted focus:border-accent";
 
+// Five slots, evenly spaced. Measured off the references: two of them read as
+// four clusters offset by one position, which is the same bar with a different
+// item lit — the implied spacing puts slots at 10/30/49/69/89% of the width.
 const TABS = [
   { href: "/", label: "Home", Icon: Home },
-  { href: "/activities", label: "Activities", Icon: Activity },
+  { href: "/activities", label: "Runs", Icon: Activity },
   { href: "/record", label: "Record", Icon: Play, center: true },
+  { href: "/records", label: "Medals", Icon: Medal },
   { href: "/you", label: "You", Icon: User },
 ] as const;
 
@@ -135,7 +139,9 @@ export function TabBar() {
       <ul className="mx-auto flex max-w-[560px] items-center">
         {TABS.map(({ href, label, Icon, ...rest }) => {
           const center = "center" in rest && rest.center;
-          const active = href === "/" ? path === "/" : path.startsWith(href);
+          // exact match, or a real sub-path: startsWith would light both
+          // "Record" and "Medals" when you are on /records
+          const active = path === href || (href !== "/" && path.startsWith(href + "/"));
           if (center) {
             return (
               <li key={label} className="flex-1">

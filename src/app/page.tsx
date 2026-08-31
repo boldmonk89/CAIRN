@@ -25,7 +25,7 @@ export default function HomePage() {
   const pbs = personalBests(runs);
 
   return (
-    <div className="px-5 pb-32 pt-8">
+    <div className="px-4 pb-32 pt-8">
       <p className="label text-muted">Cairn</p>
       <h1 className="display mt-2 text-[clamp(2.5rem,12vw,3.5rem)]">
         {runs.length === 0 ? "Start\nsomething." : `Hello,\n${profile.name}.`}

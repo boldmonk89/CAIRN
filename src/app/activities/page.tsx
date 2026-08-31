@@ -14,7 +14,7 @@ export default function ActivitiesPage() {
   const all = totals(runs);
 
   return (
-    <div className="px-5 pb-32 pt-8">
+    <div className="px-4 pb-32 pt-8">
       <h1 className="display text-[clamp(2.25rem,10vw,3rem)]">Activities</h1>
 
       <Card className="mt-6 p-5">

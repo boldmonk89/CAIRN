@@ -14,7 +14,7 @@
 import { chromium } from "playwright";
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
-const PAGES = ["/", "/activities", "/record", "/you"];
+const PAGES = ["/", "/activities", "/record", "/records", "/you"];
 const WIDTHS = [320, 390];
 
 const AUDIT = `(() => {

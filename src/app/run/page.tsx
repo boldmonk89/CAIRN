@@ -81,7 +81,7 @@ function RunDetail() {
         </Link>
       </div>
 
-      <div className="px-5 pt-6">
+      <div className="px-4 pt-6">
         <p className="label text-muted">
           {dateLabel(run.startedAt)} · {timeLabel(run.startedAt)}
         </p>
