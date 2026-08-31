@@ -40,14 +40,14 @@ describe("summarise", () => {
 
 describe("personalBests", () => {
   it("keeps the fastest time at each distance across runs", () => {
-    const pbs = personalBests([run("slow", 5000, 330), run("fast", 5000, 300)]);
+    const pbs = personalBests([run("slow", 5150, 330), run("fast", 5150, 300)]);
     const fiveK = pbs.find((p) => p.label === "5K")!;
     expect(fiveK.runId).toBe("fast");
     expect(fiveK.seconds).toBeCloseTo(1500, -1);
   });
 
   it("records a 1K from a 5K run, but no 10K", () => {
-    const labels = personalBests([run("a", 5000, 300)]).map((p) => p.label);
+    const labels = personalBests([run("a", 5150, 300)]).map((p) => p.label);
     expect(labels).toContain("1K");
     expect(labels).toContain("5K");
     expect(labels).not.toContain("10K");
@@ -65,8 +65,8 @@ describe("achievementsFor", () => {
   });
 
   it("awards a record when the run is genuinely faster", () => {
-    const slow = run("slow", 5000, 330);
-    const fast = run("fast", 5000, 300);
+    const slow = run("slow", 5150, 330);
+    const fast = run("fast", 5150, 300);
     const a = achievementsFor(fast, [slow]);
     const pb = a.find((x) => x.kind === "distance-pb" && x.label === "5K");
     expect(pb).toBeDefined();
@@ -74,14 +74,14 @@ describe("achievementsFor", () => {
   });
 
   it("awards nothing to a slower repeat of the same route", () => {
-    const fast = run("fast", 5000, 300);
-    const slow = run("slow", 5000, 330);
+    const fast = run("fast", 5150, 300);
+    const slow = run("slow", 5150, 330);
     expect(achievementsFor(slow, [fast])).toEqual([]);
   });
 
   it("does not let a run beat its own record", () => {
     // the classic off-by-one: passing the full history including this run
-    const r = run("a", 5000, 300);
+    const r = run("a", 5150, 300);
     const withItself = achievementsFor(r, [r]);
     expect(withItself.filter((x) => x.kind === "distance-pb")).toEqual([]);
   });
@@ -100,7 +100,7 @@ describe("achievementsFor", () => {
   });
 
   it("treats a new longer distance as a first, not as beating a record", () => {
-    const a = achievementsFor(run("ten", 10_000, 330, 100_000), [run("five", 5000, 300)]);
+    const a = achievementsFor(run("ten", 10_150, 330, 100_000), [run("five", 5150, 300)]);
     const tenK = a.find((x) => x.kind === "distance-pb" && x.label === "10K");
     expect(tenK!.title).toBe("First 10K");
   });

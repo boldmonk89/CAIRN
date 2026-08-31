@@ -6,8 +6,18 @@ import {
   totalDistance, withDistance, type Fix,
 } from "./geo";
 
+/**
+ * Bumped whenever the maths that derives a run's numbers changes, so already
+ * saved runs get recomputed from their raw track instead of keeping figures
+ * produced by an older, wronger version.
+ *   1 -> 2: GPS noise was being integrated as distance, inflating a walk by
+ *           nearly 4x and reporting a 3:00/km pace for it.
+ */
+export const RUN_VERSION = 2;
+
 export interface Run {
   id: string;
+  v?: number;
   startedAt: number; // epoch ms
   title: string;
   note?: string;
@@ -41,6 +51,7 @@ export function summarise(
   const movingMs = movingTime(pts);
   return {
     id,
+    v: RUN_VERSION,
     startedAt: track[0]?.t ?? Date.now(),
     title,
     note,
@@ -121,8 +132,12 @@ export function achievementsFor(run: Run, previous: Run[]): Achievement[] {
     }
   }
 
+  // A margin, not an exact >. Two runs of the same route measure slightly
+  // differently — GPS smoothing is time-dependent, so the slower lap comes out
+  // marginally longer — and "longest run" by three metres is not an
+  // achievement anyone wants to be shown.
   const farthest = Math.max(0, ...previous.map((r) => r.distance));
-  if (previous.length > 0 && run.distance > farthest) {
+  if (previous.length > 0 && run.distance > farthest * 1.02) {
     out.push({
       kind: "longest", metres: run.distance,
       title: "Longest run",
@@ -131,7 +146,7 @@ export function achievementsFor(run: Run, previous: Run[]): Achievement[] {
   }
 
   const highest = Math.max(0, ...previous.map((r) => r.elevation));
-  if (previous.length > 0 && run.elevation > highest && run.elevation >= 10) {
+  if (previous.length > 0 && run.elevation > highest * 1.05 && run.elevation >= 10) {
     out.push({
       kind: "most-elevation", metres: run.elevation,
       title: "Most climbing",

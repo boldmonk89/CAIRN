@@ -70,8 +70,10 @@ describe("cleanTrack", () => {
 describe("distance and pace", () => {
   const pts = withDistance(straightRun(5000, 300)); // 5 km at 5:00/km
 
-  it("measures the track to within a metre or two", () => {
-    expect(totalDistance(pts)).toBeGreaterThan(4990);
+  it("measures the track to within half a percent", () => {
+    // not "to the metre": the filter that stops GPS noise becoming distance
+    // costs a little length on a perfectly clean track, which no real GPS is
+    expect(totalDistance(pts)).toBeGreaterThan(4975);
     expect(totalDistance(pts)).toBeLessThan(5010);
   });
 
@@ -112,9 +114,11 @@ describe("splits", () => {
 
   it("times each kilometre at the pace it was run", () => {
     // the tail split is a partial kilometre, so compare pace, not raw seconds
-    for (const s of splits(pts)) expect(s.pace!).toBeCloseTo(300, 0);
+    // within ~0.5%: the noise filter costs a little length, which shows up as
+    // a fractionally slower pace on a synthetically perfect track
+    for (const s of splits(pts)) expect(Math.abs(s.pace! - 300)).toBeLessThan(2);
     for (const s of splits(pts).filter((x) => x.distance === 1000)) {
-      expect(s.seconds).toBeCloseTo(300, 0);
+      expect(Math.abs(s.seconds - 300)).toBeLessThan(2);
     }
   });
 
@@ -197,5 +201,60 @@ describe("calories", () => {
   it("returns zero rather than NaN for a run that never started", () => {
     expect(calories(0, 0, 70)).toBe(0);
     expect(calories(5000, 60_000, 0)).toBe(0);
+  });
+});
+
+describe("GPS noise must not become distance", () => {
+  // A deterministic jitter: the receiver reporting a wandering position for
+  // someone who is barely moving. This is what a real phone does.
+  const jitter = (seed: number) => {
+    let s = seed;
+    return () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648) * 2 - 1;
+  };
+
+  /** walking in a straight line at `mPerSec`, with `noise` metres of GPS wander */
+  function walk(seconds: number, mPerSec: number, noise: number, accuracy = 8): Fix[] {
+    const rand = jitter(4242);
+    const DEG = 1 / 111_194.93;
+    const out: Fix[] = [];
+    for (let t = 0; t <= seconds; t++) {
+      const along = t * mPerSec;
+      out.push({
+        lat: (along + rand() * noise) * DEG,
+        lon: (rand() * noise) * DEG,
+        t: t * 1000,
+        accuracy,
+        altitude: null,
+      });
+    }
+    return out;
+  }
+
+  it("reports a standing still as barely any distance", () => {
+    // five minutes stationary, receiver wandering +/- 8 m
+    const pts = withDistance(cleanTrack(walk(300, 0, 8)));
+    expect(totalDistance(pts)).toBeLessThan(60);
+  });
+
+  it("does not turn a walk into a run", () => {
+    // 6 minutes at 1.39 m/s = 500 m, a 12:00/km walking pace
+    const pts = withDistance(cleanTrack(walk(360, 1.39, 8)));
+    const d = totalDistance(pts);
+    expect(d).toBeGreaterThan(380); // must not lose the real movement either
+    expect(d).toBeLessThan(650);
+
+    const p = pace(d, movingTime(pts))!;
+    expect(p).toBeGreaterThan(500); // slower than 8:20/km — nowhere near 3:00
+  });
+
+  it("still measures a genuine run accurately through the same noise", () => {
+    // 10 minutes at 3.33 m/s = 2000 m, a 5:00/km running pace
+    const pts = withDistance(cleanTrack(walk(600, 3.33, 8)));
+    const d = totalDistance(pts);
+    expect(d).toBeGreaterThan(1800);
+    expect(d).toBeLessThan(2300);
+    const p = pace(d, movingTime(pts))!;
+    expect(p).toBeGreaterThan(260);
+    expect(p).toBeLessThan(340);
   });
 });

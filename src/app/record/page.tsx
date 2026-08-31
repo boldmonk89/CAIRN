@@ -2,11 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RouteMap } from "@/components/route-map";
 import { Button, Stat } from "@/components/ui";
 import { Back, Pause, Play, Satellite, Stop, Warning } from "@/components/icons";
-import { GPS, haversine, pace, type Fix } from "@/lib/geo";
+import {
+  GPS, cleanTrack, movingTime, pace, totalDistance, withDistance, type Fix,
+} from "@/lib/geo";
 import { allRuns, putRun, useProfile } from "@/lib/db";
 import { achievementsFor, summarise } from "@/lib/runs";
 import { clock, defaultTitle, km, paceLabel } from "@/lib/format";
@@ -19,7 +21,6 @@ export default function RecordPage() {
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [fixes, setFixes] = useState<Fix[]>([]);
-  const [distance, setDistance] = useState(0);
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -29,14 +30,20 @@ export default function RecordPage() {
   const watchId = useRef<number | null>(null);
   const wakeLock = useRef<WakeLockSentinel | null>(null);
   const phaseRef = useRef<Phase>("idle");
-  const lastFix = useRef<Fix | null>(null);
-  const distanceRef = useRef(0);
-  const movingMs = useRef(0);
   const startedAt = useRef<number | null>(null);
   const pausedMs = useRef(0);
   const pausedAt = useRef<number | null>(null);
 
   phaseRef.current = phase;
+
+  // Derived from the whole track with exactly the same maths that runs at save
+  // time, so the live number and the saved number can never disagree.
+  // ponytail: O(n) per fix, so O(n^2) over a run — about a second of CPU spread
+  // across an hour at 1 Hz. Switch to an incremental filter if that ever shows.
+  const { distance, movingMs } = useMemo(() => {
+    const pts = withDistance(fixes);
+    return { distance: totalDistance(pts), movingMs: movingTime(pts) };
+  }, [fixes]);
 
   const elapsed =
     startedAt.current === null
@@ -84,18 +91,8 @@ export default function RecordPage() {
       altitude: pos.coords.altitude,
     };
     if (fix.accuracy > GPS.maxAccuracy) return; // too vague to believe
-
-    const prev = lastFix.current;
-    if (prev) {
-      const dt = (fix.t - prev.t) / 1000;
-      if (dt <= 0) return;
-      const step = haversine(prev, fix);
-      if (step / dt > GPS.maxSpeed) return; // receiver jumped; ignore the fix
-      distanceRef.current += step;
-      if (step / dt >= GPS.stillSpeed) movingMs.current += dt * 1000;
-      setDistance(distanceRef.current);
-    }
-    lastFix.current = fix;
+    // Just record it. Smoothing, the noise gate and moving time all happen in
+    // one place, over the whole track, rather than being re-derived here.
     setFixes((f) => [...f, fix]);
   }, []);
 
@@ -154,7 +151,6 @@ export default function RecordPage() {
       pausedAt.current = null;
       // ponytail: the gap is not recorded, so a route walked while paused draws
       // as a straight line. Store a segment index per fix if that ever matters.
-      lastFix.current = null;
       setPhase("running");
       holdScreen();
     }
@@ -177,7 +173,7 @@ export default function RecordPage() {
 
     const id = crypto.randomUUID();
     const startTs = fixes[0].t;
-    const run = summarise(id, fixes, defaultTitle(startTs), profile.weightKg);
+    const run = summarise(id, cleanTrack(fixes), defaultTitle(startTs), profile.weightKg);
     try {
       const previous = await allRuns();
       const earned = achievementsFor(run, previous);
@@ -191,7 +187,7 @@ export default function RecordPage() {
   }
 
   const live = phase === "running" || phase === "paused";
-  const avgPace = pace(distance, movingMs.current);
+  const avgPace = pace(distance, movingMs);
   const signal =
     accuracy === null ? "searching"
     : accuracy <= 10 ? "strong"
@@ -227,7 +223,7 @@ export default function RecordPage() {
         <div className="mt-6 grid grid-cols-3 gap-3">
           <Stat label="Time" value={clock(elapsed)} />
           <Stat label="Avg pace" value={paceLabel(avgPace)} unit="/km" />
-          <Stat label="Moving" value={clock(movingMs.current)} />
+          <Stat label="Moving" value={clock(movingMs)} />
         </div>
       </div>
 

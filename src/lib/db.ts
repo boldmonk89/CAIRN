@@ -6,7 +6,7 @@
 // tells us when a write fails.
 
 import { useCallback, useEffect, useState } from "react";
-import type { Run } from "./runs";
+import { RUN_VERSION, summarise, type Run } from "./runs";
 
 const DB_NAME = "cairn";
 const VERSION = 1;
@@ -39,11 +39,33 @@ function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T
   );
 }
 
+/**
+ * Recompute any run saved by an older version of the maths. Keyed on the run's
+ * own version field, never on the store being empty — an "if there is no data"
+ * migration also fires right after someone deliberately deletes everything,
+ * and puts it all back.
+ */
+async function migrate(runs: Run[]): Promise<Run[]> {
+  const stale = runs.filter((r) => r.v !== RUN_VERSION && r.track?.length);
+  if (stale.length === 0) return runs;
+
+  const { weightKg } = readProfile();
+  const fixed = new Map(
+    stale.map((r) => [r.id, { ...summarise(r.id, r.track, r.title, weightKg, r.note), note: r.note }]),
+  );
+  await Promise.all([...fixed.values()].map(putRun));
+  return runs.map((r) => fixed.get(r.id) ?? r);
+}
+
 export const allRuns = () =>
   tx<Run[]>("readonly", (s) => s.getAll() as IDBRequest<Run[]>)
+    .then(migrate)
     .then((rs) => rs.sort((a, b) => b.startedAt - a.startedAt));
 
-export const getRun = (id: string) => tx<Run | undefined>("readonly", (s) => s.get(id));
+export const getRun = (id: string) =>
+  tx<Run | undefined>("readonly", (s) => s.get(id))
+    // the detail page can be opened directly, so it needs the same correction
+    .then(async (r) => (r ? (await migrate([r]))[0] : r));
 export const putRun = (run: Run) => tx("readwrite", (s) => s.put(run));
 export const removeRun = (id: string) => tx("readwrite", (s) => s.delete(id));
 
