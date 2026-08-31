@@ -127,23 +127,26 @@ function RunDetail() {
           </section>
         )}
 
-        <div className="mt-7">
-          <Stat label="Distance" value={<span className="text-accent">{km(run.distance)}</span>} unit="km" size="hero" />
+        {/* one number owns the page; the rest is a dense hairline table.
+            Six equal cards in a grid is the shape that reads as generated. */}
+        <div className="mt-6 flex items-baseline gap-2">
+          <span className="display text-[clamp(4rem,24vw,6.5rem)] leading-[0.82]">{km(run.distance)}</span>
+          <span className="label pb-2 text-accent">km</span>
         </div>
 
-        <dl className="mt-6 grid grid-cols-2 gap-4">
-          {[
-            [<Clock key="c" size={15} />, "Moving time", duration(run.movingMs)],
-            [<Clock key="e" size={15} />, "Elapsed", duration(run.elapsedMs)],
-            [<Ruler key="p" size={15} />, "Avg pace", `${paceLabel(avg)} /km`],
-            [<Flame key="k" size={15} />, "Calories", `${run.calories} kcal`],
-            [<Mountain key="m" size={15} />, "Elevation", `${Math.round(run.elevation)} m`],
-            [<Ruler key="g" size={15} />, "GPS points", String(run.track.length)],
-          ].map(([icon, label, value]) => (
-            <Card key={String(label)} className="p-4">
-              <dt className="label flex items-center gap-1.5 text-muted">{icon}{label}</dt>
-              <dd className="stat mt-1 text-2xl">{value}</dd>
-            </Card>
+        <dl className="mt-6 border-t border-line">
+          {([
+            ["Moving time", duration(run.movingMs)],
+            ["Elapsed", duration(run.elapsedMs)],
+            ["Avg pace", `${paceLabel(avg)} /km`],
+            ["Energy", `${run.calories} kcal`],
+            ["Elevation", `${Math.round(run.elevation)} m`],
+            ["GPS points", String(run.track.length)],
+          ] as [string, string][]).map(([label, value]) => (
+            <div key={label} className="flex items-baseline justify-between gap-4 border-b border-line py-2.5">
+              <dt className="label text-muted">{label}</dt>
+              <dd className="stat text-lg">{value}</dd>
+            </div>
           ))}
         </dl>
 

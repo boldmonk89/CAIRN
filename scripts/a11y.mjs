@@ -113,6 +113,29 @@ for (const width of WIDTHS) {
     }
   }
 
+  // /run needs a real run id, so reach it the way a person does. It is the
+  // densest page in the app and was going unmeasured.
+  await page.goto(`${BASE}/activities`, { waitUntil: "networkidle" });
+  const link = page.locator('a[href^="/run?"]').first();
+  if (await link.count()) {
+    await link.click();
+    await page.waitForTimeout(1200);
+    const r = await page.evaluate(AUDIT);
+    const problems = [];
+    if (r.contrast.length) problems.push(`${r.contrast.length} contrast`);
+    if (r.targets.length) problems.push(`${r.targets.length} small targets`);
+    if (r.scrollX) problems.push(`h-scroll (${r.scrollW} > ${r.clientW})`);
+    if (problems.length) {
+      failures += problems.length;
+      console.log(`
+FAIL ${width}px /run — ${problems.join(", ")}`);
+      for (const c of r.contrast.slice(0, 6)) console.log(`   contrast ${c.got}:1 (needs ${c.need}) ${c.tag} ${c.size}px "${c.text}" ${c.color}`);
+      for (const t of r.targets.slice(0, 6)) console.log(`   target ${t.w}x${t.h} ${t.tag} "${t.label}"`);
+    } else {
+      console.log(`PASS ${width}px /run`);
+    }
+  }
+
   // the skip link must actually become a real target once focused
   await page.goto(BASE + "/you", { waitUntil: "networkidle" });
   await page.keyboard.press("Tab");

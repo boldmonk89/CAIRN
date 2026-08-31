@@ -94,3 +94,28 @@ export function RunCard({ run, medals = 0 }: { run: Run; medals?: number }) {
     </li>
   );
 }
+
+/**
+ * The compact form. A list of identical hero cards reads as a template; one
+ * hero followed by dense rows reads as a designed page.
+ */
+export function RunRow({ run }: { run: Run }) {
+  return (
+    <li>
+      <Link
+        href={{ pathname: "/run", query: { id: run.id } }}
+        className="flex cursor-pointer items-center gap-4 border-b border-line py-3 transition-colors duration-200 hover:bg-card"
+      >
+        <RouteGlyph run={run} className="h-9 w-9 shrink-0 text-accent" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{run.title}</p>
+          <p className="label mt-0.5 text-muted">{dateLabel(run.startedAt)}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="stat text-base">{km(run.distance)}<span className="ml-0.5 text-[10px] text-muted">KM</span></p>
+          <p className="label mt-0.5 text-muted">{paceLabel(pace(run.distance, run.movingMs))} /km</p>
+        </div>
+      </Link>
+    </li>
+  );
+}

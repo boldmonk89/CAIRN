@@ -69,9 +69,13 @@ export function AreaChart({
           </>
         )}
 
-        {/* the baseline the references show under the plot */}
+        {/* baseline, with a tick under every labelled column */}
         <line x1="0" y1={pad.top + plotH} x2={W} y2={pad.top + plotH}
               stroke="var(--color-line)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        {labels.map((l, i) => l ? (
+          <line key={i} x1={x(i)} y1={pad.top + plotH} x2={x(i)} y2={pad.top + plotH + 4}
+                stroke="var(--color-line)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        ) : null)}
       </svg>
 
       <figcaption className="mt-1 flex justify-between">

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AreaChart, Ring } from "@/components/chart";
-import { Button, Card, Empty } from "@/components/ui";
-import { RunCard } from "@/components/run-card";
-import { Clock, Flame, Medal, Play, Ruler, User } from "@/components/icons";
+import { AreaChart } from "@/components/chart";
+import { Button, Empty } from "@/components/ui";
+import { RunCard, RunRow } from "@/components/run-card";
+import { Medal, Play, User } from "@/components/icons";
 import { putRun, useProfile, useRuns } from "@/lib/db";
 import { demoRun } from "@/lib/demo";
 import { thisWeek, totals, type Run } from "@/lib/runs";
@@ -14,7 +14,6 @@ import { duration, km } from "@/lib/format";
 const RANGES = { Week: 7, Month: 30, Year: 365 } as const;
 type Range = keyof typeof RANGES;
 
-/** distance per day across the window, oldest first */
 function daily(runs: Run[], days: number) {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -27,7 +26,6 @@ function daily(runs: Run[], days: number) {
   return { buckets, start };
 }
 
-/** thin the x labels so they never collide at 320px */
 function labelsFor(days: number, start: Date) {
   const every = days <= 7 ? 1 : days <= 30 ? 7 : 60;
   return Array.from({ length: days }, (_, i) => {
@@ -38,6 +36,23 @@ function labelsFor(days: number, start: Date) {
       ? d.toLocaleDateString(undefined, { weekday: "narrow" })
       : d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
   });
+}
+
+/** Dense stat strip: hairline rules between, not four boxes in a grid. */
+function Strip({ items }: { items: [string, string, string?][] }) {
+  return (
+    <dl className="flex divide-x divide-line border-y border-line">
+      {items.map(([label, value, unit]) => (
+        <div key={label} className="min-w-0 flex-1 py-3 pl-3 first:pl-0">
+          <dt className="label text-muted">{label}</dt>
+          <dd className="stat mt-1 truncate text-xl">
+            {value}
+            {unit && <span className="ml-1 text-[10px] text-muted">{unit}</span>}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 export default function HomePage() {
@@ -51,100 +66,109 @@ export default function HomePage() {
   const days = RANGES[range];
   const { buckets, start } = daily(runs, days);
   const window = totals(runs.filter((r) => r.startedAt >= start.getTime()));
-  const week = totals(thisWeek(runs));
+  const week = thisWeek(runs);
+  const [hero, ...rest] = runs;
 
   return (
     <div className="pb-32">
-      {/* header: mark on the left, actions on the right — the shape every
-          reference screen opens with */}
-      <header className="flex items-center gap-2 px-4 pt-5">
-        <p className="display flex-1 text-2xl">Cairn</p>
+      <header className="flex items-center gap-1 px-4 pt-5">
+        <p className="label flex-1 text-muted">Cairn</p>
         <Link href="/records" aria-label="Your records"
-              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full text-muted transition-colors duration-200 hover:bg-raised hover:text-ink">
-          <Medal size={20} />
+              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full text-muted transition-colors duration-200 hover:bg-card hover:text-ink">
+          <Medal size={19} />
         </Link>
         <Link href="/you" aria-label="Your profile"
-              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full text-muted transition-colors duration-200 hover:bg-raised hover:text-ink">
-          <User size={20} />
+              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full text-muted transition-colors duration-200 hover:bg-card hover:text-ink">
+          <User size={19} />
         </Link>
       </header>
 
-      <h1 className="display mt-3 px-4 text-[clamp(2.25rem,11vw,3.25rem)]">
-        {runs.length === 0 ? "Start\nsomething." : `Hello,\n${profile.name}.`}
-      </h1>
-
-      {/* range chips, directly under the title */}
-      <div className="rail mt-4 flex gap-2 px-4">
-        {(Object.keys(RANGES) as Range[]).map((r) => (
-          <button
-            key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)}
-            className={`min-h-11 shrink-0 cursor-pointer rounded-full border px-5 text-sm font-medium transition-colors duration-200 ${
-              range === r ? "border-accent bg-accent text-accent-ink" : "border-line bg-card text-ink hover:border-muted"
-            }`}
-          >
-            {r}
-          </button>
-        ))}
-      </div>
-
-      {/* four rings, the quick-stat row the references run under the header */}
-      <div className="mt-5 grid grid-cols-4 gap-2 px-4">
-        <Ring label="Distance" sub={km(window.distance, 0)} value={window.distance} goal={days * 4000} />
-        <Ring label="Runs" sub={String(window.runs)} value={window.runs} goal={Math.max(days / 2, 1)} />
-        <Ring label="Hours" sub={String(Math.round(window.movingMs / 3_600_000))} value={window.movingMs} goal={days * 1_800_000} />
-        <Ring label="Kcal" sub={window.calories > 999 ? `${Math.round(window.calories / 1000)}k` : String(window.calories)} value={window.calories} goal={days * 400} />
-      </div>
-
-      <Card className="mx-4 mt-5 p-4">
-        <div className="mb-3 flex items-baseline justify-between">
-          <p className="label text-muted">Distance · last {days} days</p>
-          <p className="stat text-lg">{km(window.distance, 1)}<span className="ml-1 text-xs text-muted">km</span></p>
+      {/* The hero is one number, not a grid of four. Scale is the whole point:
+          if everything is medium-sized, nothing has been designed. */}
+      <section className="mt-6 px-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="label text-muted">{range === "Week" ? "This week" : `Last ${days} days`}</p>
+          <div className="flex gap-1">
+            {(Object.keys(RANGES) as Range[]).map((r) => (
+              <button
+                key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)}
+                className={`label min-h-11 cursor-pointer px-2 transition-colors duration-200 ${
+                  range === r ? "text-ink underline decoration-accent decoration-2 underline-offset-8" : "text-muted hover:text-ink"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
         </div>
+
+        <p className="mt-1 flex items-baseline gap-2">
+          <span className="display text-[clamp(4.5rem,26vw,7rem)] leading-[0.82] text-ink">
+            {km(window.distance, 1)}
+          </span>
+          <span className="label pb-2 text-accent">km</span>
+        </p>
+      </section>
+
+      <div className="mt-5 px-4">
+        <Strip items={[
+          ["Runs", String(window.runs)],
+          ["Time", duration(window.movingMs)],
+          ["Energy", window.calories > 999 ? `${(window.calories / 1000).toFixed(1)}k` : String(window.calories), "kcal"],
+        ]} />
+      </div>
+
+      {/* full bleed, no card: the plot is the content, a border around it is
+          just another box */}
+      <section className="mt-8 px-4">
         <AreaChart
           values={buckets.map((m) => m / 1000)}
           labels={labelsFor(days, start)}
+          height={132}
           format={(v) => `${v.toFixed(1)} km`}
           caption={`Distance per day over the last ${days} days`}
         />
-      </Card>
+      </section>
 
-      <div className="px-4">
+      <div className="mt-8 px-4">
         <Link
           href="/record"
-          className="mt-5 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-5 font-semibold text-accent-ink transition-[filter] duration-200 hover:brightness-110"
+          className="group flex min-h-14 cursor-pointer items-center gap-3 rounded-xl bg-accent px-5 text-accent-ink transition-[filter] duration-200 hover:brightness-110"
         >
-          <Play size={20} /> Record a run
+          <Play size={18} />
+          <span className="flex-1 font-semibold">Record a run</span>
+          <span className="label opacity-70">GPS</span>
         </Link>
-
-        {week.runs > 0 && (
-          <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-            <span className="flex items-center gap-1.5"><Ruler size={13} />{km(week.distance, 1)} km this week</span>
-            <span className="flex items-center gap-1.5"><Clock size={13} />{duration(week.movingMs)}</span>
-            <span className="flex items-center gap-1.5"><Flame size={13} />{week.calories.toLocaleString()} kcal</span>
-          </p>
-        )}
-
-        <section className="mt-9">
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="display text-xl">Recent</h2>
-            {runs.length > 3 && (
-              <Link href="/activities" className="label cursor-pointer text-accent">All {runs.length}</Link>
-            )}
-          </div>
-
-          {runs.length === 0 ? (
-            <Empty
-              title="No runs yet"
-              body="Hit record, go outside, come back with a line on a map and a number to beat."
-              action={<Button variant="ghost" onClick={() => putRun(demoRun()).then(reload)}>Load a demo run instead</Button>}
-            />
-          ) : (
-            <ul className="grid gap-4">
-              {runs.slice(0, 3).map((r) => <RunCard key={r.id} run={r} />)}
-            </ul>
-          )}
-        </section>
       </div>
+
+      <section className="mt-12 px-4">
+        <div className="mb-4 flex items-baseline justify-between">
+          <h2 className="display text-2xl">
+            {runs.length === 0 ? "Nothing yet" : week.length > 0 ? "Lately" : "Last time out"}
+          </h2>
+          {runs.length > 4 && (
+            <Link href="/activities" className="label cursor-pointer text-accent">All {runs.length}</Link>
+          )}
+        </div>
+
+        {runs.length === 0 ? (
+          <Empty
+            title={`Hello, ${profile.name}.`}
+            body="Hit record, go outside, come back with a line on a map and a number to beat."
+            action={<Button variant="ghost" onClick={() => putRun(demoRun()).then(reload)}>Load a demo run instead</Button>}
+          />
+        ) : (
+          <>
+            {/* one hero, then dense rows — hierarchy instead of repetition */}
+            <ul><RunCard run={hero} /></ul>
+            {rest.length > 0 && (
+              <ul className="mt-6 border-t border-line">
+                {rest.slice(0, 4).map((r) => <RunRow key={r.id} run={r} />)}
+              </ul>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 }
