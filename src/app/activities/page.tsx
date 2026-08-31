@@ -3,7 +3,7 @@
 import { Empty, Stat, Card } from "@/components/ui";
 import { RunCard } from "@/components/run-card";
 import { useRuns } from "@/lib/db";
-import { totals } from "@/lib/runs";
+import { achievementsFor, totals } from "@/lib/runs";
 import { duration, km } from "@/lib/format";
 
 export default function ActivitiesPage() {
@@ -29,8 +29,12 @@ export default function ActivitiesPage() {
       {runs.length === 0 ? (
         <Empty title="Nothing here yet" body="Your saved runs will stack up on this page." />
       ) : (
-        <ul className="mt-6 grid gap-3">
-          {runs.map((r) => <RunCard key={r.id} run={r} />)}
+        <ul className="mt-6 grid gap-4">
+          {runs.map((r, i) => (
+            // "previous" is every run older than this one, so a run is never
+            // compared against itself or against runs that came after it
+            <RunCard key={r.id} run={r} medals={achievementsFor(r, runs.slice(i + 1)).length} />
+          ))}
         </ul>
       )}
     </div>

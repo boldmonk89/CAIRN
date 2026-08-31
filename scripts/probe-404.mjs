@@ -24,4 +24,7 @@ const nav = await p.evaluate(() => {
 console.log("bottom bar:", JSON.stringify(nav));
 console.log("title shown:", await p.locator("h1, input").first().inputValue().catch(() => p.locator("h1").first().textContent()));
 await p.screenshot({ path: "scripts/run-new.png" });
+await p.goto("http://localhost:3999/", { waitUntil: "networkidle" });
+await p.waitForTimeout(1500);
+await p.screenshot({ path: "scripts/home-new.png" });
 await b.close();

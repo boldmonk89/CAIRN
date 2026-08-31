@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { RouteMap } from "@/components/route-map";
 import { ShareCard } from "@/components/share-card";
+import { PaceChart } from "@/components/chart";
 import { Button, Card, Empty, Sheet, Stat, inputClass } from "@/components/ui";
 import { Back, Clock, Flame, Medal, Mountain, Ruler, Share, Trash } from "@/components/icons";
 import { getRun, putRun, removeRun } from "@/lib/db";
@@ -42,7 +43,19 @@ function RunDetail() {
     const pts = withDistance(run.track);
     const kmSplits = splits(pts);
     const fastest = Math.min(...kmSplits.map((s) => s.pace ?? Infinity));
-    return { kmSplits, fastest, bests: bestsFor(run) };
+    // pace sampled along the run, so the chart shows the shape of the effort
+    // rather than just the per-kilometre averages
+    const paceLine: { km: number; pace: number }[] = [];
+    const windowM = Math.max(200, run.distance / 40);
+    let i = 0;
+    for (let j = 1; j < pts.length; j++) {
+      if (pts[j].d - pts[i].d < windowM) continue;
+      const secs = (pts[j].t - pts[i].t) / 1000;
+      const p = pace(pts[j].d - pts[i].d, pts[j].t - pts[i].t);
+      if (p && secs > 0) paceLine.push({ km: pts[j].d / 1000, pace: p });
+      i = j;
+    }
+    return { kmSplits, fastest, bests: bestsFor(run), paceLine };
   }, [run]);
 
   if (run === undefined) return <div className="p-5 label text-muted">Loading…</div>;
@@ -137,6 +150,18 @@ function RunDetail() {
         <Button onClick={() => setSharing("run")} className="mt-5 flex w-full items-center justify-center gap-2">
           <Share size={18} /> Share this run
         </Button>
+
+        {analysis && analysis.paceLine.length > 2 && (
+          <section className="mt-9">
+            <h2 className="display mb-3 text-xl">Pace</h2>
+            <Card className="p-4">
+              <PaceChart points={analysis.paceLine} />
+            </Card>
+            <p className="mt-2 text-xs text-muted">
+              Higher is faster. Sampled every {Math.round(Math.max(200, run.distance / 40))} m.
+            </p>
+          </section>
+        )}
 
         {analysis && analysis.kmSplits.length > 0 && (
           <section className="mt-9">
